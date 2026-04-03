@@ -1,0 +1,8 @@
+- `[x]` Khởi tạo dự án React bằng Vite (`frontend`)
+- `[/]` Cài đặt các thư viện cần thiết (react-router-dom, axios)
+- `[ ]` Xây dựng cấu trúc thư mục (pages, components, services)
+- `[ ]` Thiết lập Design System (Vanilla CSS cao cấp, variables)
+- `[ ]` Gọi API tích hợp (auth + diaries) từ Go Backend
+- `[ ]` Xây dựng trang Authentication (Đăng nhập / Đăng ký)
+- `[ ]` Xây dựng trang Dashboard quản lý Nhật Ký
+- `[ ]` Kiểm thử kết nối API Backend - Frontend

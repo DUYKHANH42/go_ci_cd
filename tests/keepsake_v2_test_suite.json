@@ -1,0 +1,47 @@
+{
+  "test_suite": "The Keepsake 3D Experience v2.0",
+  "scenarios": [
+    {
+      "name": "Landing Page Visual Verification",
+      "steps": [
+        "Mở trang http://localhost:5173",
+        "Đảm bảo thấy Bìa sách 3D màu Teal nằm giữa màn hình",
+        "Kiếm tra tiêu đề 'The Keepsake' dập nổi",
+        "Bấm 'Mở sách' và quan sát hiệu ứng lật bìa mượt mà"
+      ]
+    },
+    {
+      "name": "Auth Flow & Book Transition",
+      "steps": [
+        "Đăng nhập với tài khoản test",
+        "Giao diện chuyển từ Landing sang Dashboard 3D mượt mà",
+        "Hiển thị thông báo chào mừng theo tên người dùng"
+      ]
+    },
+    {
+      "name": "Double-Page Spread Content Flow",
+      "steps": [
+        "Tạo một nhật ký với nội dung > 2000 ký tự",
+        "Xác nhận Trang Trái hiển thị Tiêu đề và đoạn đầu",
+        "Xác nhận Trang Phải hiển thị đoạn văn bản tiếp theo tự động",
+        "Đảm bảo văn bản nằm CĂN TRÊN dòng kẻ Ivory, không bị lệch"
+      ]
+    },
+    {
+      "name": "3D Page Flipping Navigation",
+      "steps": [
+        "Nhấn nút 'Tiếp': Quan sát trang bên phải lật sang trái một cách tự nhiên",
+        "Nhấn nút 'Lùi': Quan sát trang từ bên trái lật ngược về phải",
+        "Dữ liệu phải được cập nhật khớp với thời điểm lật trang",
+        "Không xảy ra hiệu ứng hụt hẫng 'qua rồi lại về'"
+      ]
+    },
+    {
+      "name": "Vietnamese Localization",
+      "steps": [
+        "Kiểm tra ngày tháng hiển thị theo định dạng VN (VD: Thứ Ba, 10 Tháng 10, 2024)",
+        "Kiểm tra các nhãn thông báo (Lưu, Chỉnh sửa, Nhật ký mới) được Việt hóa nếu cần"
+      ]
+    }
+  ]
+}
