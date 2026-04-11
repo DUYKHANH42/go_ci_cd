@@ -88,7 +88,7 @@ const PrivateEnvelopeOverlay = ({ onUnlock }) => {
 };
 
 // ─── Sub-component: Left Page Content ────────────────────────────────────────
-const LeftPageContent = ({ spread, pageNum, onEdit, onDelete, isLocked }) => (
+const LeftPageContent = ({ spread, pageNum, onEdit, onDelete, isLocked, stains }) => (
   <>
     <div className="ks-content__meta">
       <span>{fmtDate(spread?.date)}</span>
@@ -117,11 +117,16 @@ const LeftPageContent = ({ spread, pageNum, onEdit, onDelete, isLocked }) => (
       {spread?.mood && !isLocked && <span style={{ fontSize: '16px' }}>{MOODS[spread.mood]}</span>}
       <span className="ks-page-num">{pageNum}</span>
     </div>
+    
+    {/* RENDER STAINS */}
+    {stains && stains.map((stain, idx) => (
+      <div key={idx} className="ks-coffee-stain-mark" style={{ left: stain.x, top: stain.y, transform: `translate(-50%, -50%) rotate(${stain.rot}deg)` }}></div>
+    ))}
   </>
 );
 
 // ─── Sub-component: Right Page Content ───────────────────────────────────────
-const RightPageContent = ({ spread, username, pageNum, isLocked, onUnlock }) => (
+const RightPageContent = ({ spread, username, pageNum, isLocked, onUnlock, stains }) => (
   <>
     {isLocked && <PrivateEnvelopeOverlay onUnlock={onUnlock} />}
     
@@ -159,7 +164,26 @@ const RightPageContent = ({ spread, username, pageNum, isLocked, onUnlock }) => 
       {spread?.isPrivate && <Lock size={11} />}
       <span style={{ fontFamily: 'Montserrat', fontSize: '9px', letterSpacing: '2px' }}>{username}</span>
     </div>
+
+    {/* RENDER STAINS */}
+    {stains && stains.map((stain, idx) => (
+      <div key={idx} className="ks-coffee-stain-mark" style={{ left: stain.x, top: stain.y, transform: `translate(-50%, -50%) rotate(${stain.rot}deg)` }}></div>
+    ))}
   </>
+);
+
+// ─── Sub-component: Vintage Delete Confirm Modal ──────────────────────────────
+const VintageDeleteConfirmModal = ({ onConfirm, onCancel }) => (
+  <div className="ks-modal-overlay ks-modal-overlay--dark ks-flex-center">
+    <div className="ks-burnt-paper">
+      <div className="ks-burnt-edges"></div>
+      <p className="ks-burnt-text">Bạn có thực sự muốn thiêu vụn ký ức này không?</p>
+      <div className="ks-burnt-actions">
+        <button className="ks-burnt-btn ks-burnt-btn--danger" onClick={onConfirm}>[ Xé bỏ ]</button>
+        <button className="ks-burnt-btn ks-burnt-btn--safe" onClick={onCancel}>[ Giữ lại ]</button>
+      </div>
+    </div>
+  </div>
 );
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -169,10 +193,17 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [flipState, setFlipState] = useState(null);
+  const [isTearing, setIsTearing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isWriting, setIsWriting] = useState(false);
   const [writingData, setWritingData] = useState({ title: '', content: '', mood: 'neutral', isPrivate: true });
   const [isSaving, setIsSaving] = useState(false);
+
+  // New Environment States
+  const [deskMode, setDeskMode] = useState('overview'); // 'overview' | 'reading'
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isCoffeeDipped, setIsCoffeeDipped] = useState(false);
+  const [coffeeStains, setCoffeeStains] = useState({});
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [unlockedDiaries, setUnlockedDiaries] = useState(new Set());
   const audioRef = useRef(null);
@@ -250,14 +281,56 @@ const [filter, setFilter] = useState({});
   };
 
   // ── CRUD ─────────────────────────────────────────────────────────────────
-  const handleDelete = async () => {
+  const promptDelete = () => {
     const diary = bookSpreads[currentIdx]?.original;
-    if (!diary || !window.confirm('Xóa ký ức này vĩnh viễn?')) return;
-    try {
-      await diaryService.delete(diary.id);
-      setCurrentIdx(0);
-      fetchDiaries();
-    } catch { alert('Xóa không thành công!'); }
+    if (!diary) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    const diary = bookSpreads[currentIdx]?.original;
+    if (!diary) return;
+    
+    setIsTearing(true);
+    setTimeout(async () => {
+      try {
+        await diaryService.delete(diary.id);
+        setCurrentIdx(0);
+        fetchDiaries();
+      } catch { 
+        alert('Xóa không thành công!'); 
+      } finally {
+        setIsTearing(false);
+      }
+    }, 1000);
+  };
+
+  // ── Desk Environment Interactions ────────────────────────────────────────
+  const handlePlayCassette = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(e => console.log(e));
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handlePageClick = (e, spreadId, pageSide) => {
+    if (!isCoffeeDipped || !spreadId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const key = `${spreadId}_${pageSide}`;
+    
+    setCoffeeStains(prev => ({
+      ...prev,
+      [key]: [...(prev[key] || []), { x: x + '%', y: y + '%', rot: Math.random() * 360 }]
+    }));
+    
+    // Đã vịn xong 1 lần thì hết ướt tay (hoặc muốn thì tắt dòng này để in liên tục)
+    setIsCoffeeDipped(false);
   };
 
   const handleSave = async (e) => {
@@ -319,80 +392,91 @@ const [filter, setFilter] = useState({});
     <div className="ks-sunlight-gradient">
       <audio ref={audioRef} src="../public/mp3/intro.mp3" loop />
 
-      {/* ── STICKY HEADER & FILTER BAR ── */}
-      <div className="ks-header-wrapper">
-        <header className="ks-dashboard-header">
-          <button className="ks-nav-back" onClick={() => navigate('/')}>
-            <ArrowLeft size={13} /><span>THƯ VIỆN</span>
-          </button>
-
-          <div className="ks-logo-inline">
-            <BookOpen size={17} />
-            <span>The Keepsake</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button className="ks-icon-btn" title="Thống kê" onClick={() => setShowAnalytics(true)}>
-              <BarChart2 size={16} />
-            </button>
-            <button id="btn-new-diary" className="ks-btn-primary" onClick={() => startWriting()}>
-              <Plus size={14} /> VIẾT MỚI
-            </button>
-            <button className="ks-icon-btn" title="Đăng xuất"
-              onClick={() => { authService.logout(); navigate('/login'); }}>
-              <LogOut size={15} />
-            </button>
-          </div>
-        </header>
-        
-        {/* The new extremely sleek inline filter bar */}
+      {/* ── HOLOGRAPHIC FLOATING PILLS UI ── */}
+      <div className={`ks-header-wrapper ${deskMode === 'reading' ? 'ks-header-wrapper--hidden' : ''}`}>
         <FilterPanel filter={filter} setFilter={handleFilterChange} />
+        
+        {/* Right side Actions (Thống Kê, Viết Mới, Đăng xuất, Thư viện) grouped as pills next to filters */}
+        <div className="ks-filter-bar ks-actions-bar">
+          <button className="ks-filter-group" onClick={() => navigate('/')} title="Về trang chủ">
+            <ArrowLeft size={14} className="ks-filter-icon" /> <span style={{fontSize:'0.8rem', color:'#fff'}}>Thư viện</span>
+          </button>
+          <button className="ks-filter-group" title="Thống kê" onClick={() => setShowAnalytics(true)}>
+            <BarChart2 size={14} className="ks-filter-icon" /> <span style={{fontSize:'0.8rem', color:'#fff'}}>Thống kê</span>
+          </button>
+          <button id="btn-new-diary" className="ks-filter-group" onClick={() => startWriting()} style={{color: '#fff'}}>
+            <Plus size={14} className="ks-filter-icon" /> <span style={{fontSize:'0.8rem'}}>Viết Mới</span>
+          </button>
+          <button className="ks-filter-group" title="Đăng xuất" onClick={() => { authService.logout(); navigate('/login'); }}>
+            <LogOut size={14} className="ks-filter-icon" />
+          </button>
+        </div>
       </div>
 
       {/* ── STAGE ── */}
-      <main className="ks-stage" style={{ paddingBottom: '64px' }}>
-
-        {/* Loading */}
-        {isLoading && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', opacity: 0.35 }}>
-            <div className="ks-spinner" />
-            <span style={{ fontFamily: 'Montserrat', fontSize: '10px', letterSpacing: '3px' }}>ĐANG TẢI...</span>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!isLoading && bookSpreads.length === 0 && (
-          <div className="ks-empty-state animate-slide-up">
-            <BookOpen size={80} strokeWidth={0.8} />
-            <h2>Thư viện chưa có ký ức</h2>
-            <p>Hãy bắt đầu ghi lại những khoảnh khắc đầu tiên của bạn.</p>
-            <button className="ks-btn-primary" style={{ opacity: 1 }} onClick={() => startWriting()}>
-              <Plus size={14} /> BẮT ĐẦU NGAY
+      <main className="ks-desk-scene" style={{ paddingBottom: '64px' }}>
+        <div className={`ks-desk-environment ks-desk-environment--${deskMode}`}>
+          
+          {/* Close Book Button (only in reading mode) */}
+          {deskMode === 'reading' && (
+            <button className="ks-btn-close-book" onClick={() => setDeskMode('overview')} title="Gập sổ lại">
+              <span className="close-x">✕</span> Đóng Sổ
             </button>
-          </div>
-        )}
+          )}
 
-        {/* Book */}
-        {!isLoading && bookSpreads.length > 0 && (
-          <>
-            {/* Prev button */}
-            <button className="ks-btn-nav ks-btn-nav--prev"
-              onClick={() => handleFlip('prev')}
-              disabled={currentIdx === 0 || !!flipState}
-              title="Trang trước (←)">
-              <ChevronLeft size={26} />
-            </button>
+          {/* Loading */}
+          {isLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', opacity: 0.35, alignSelf: 'center', margin: 'auto' }}>
+              <div className="ks-spinner" />
+              <span style={{ fontFamily: 'Montserrat', fontSize: '10px', letterSpacing: '3px' }}>ĐANG TẢI...</span>
+            </div>
+          )}
 
-            {/* ── BOOK ── */}
-            <div className="ks-book" aria-label="Sách nhật ký">
+          {/* Empty state */}
+          {!isLoading && bookSpreads.length === 0 && (
+            <div className="ks-empty-state animate-slide-up" style={{ alignSelf: 'center', margin: 'auto' }}>
+              <BookOpen size={80} strokeWidth={0.8} />
+              <h2>Thư viện chưa có ký ức</h2>
+              <p>Hãy bắt đầu ghi lại những khoảnh khắc đầu tiên của bạn.</p>
+              <button className="ks-btn-primary" style={{ opacity: 1 }} onClick={() => { setDeskMode('reading'); startWriting(); }}>
+                <Plus size={14} /> BẮT ĐẦU NGAY
+              </button>
+            </div>
+          )}
 
-              {/* LEFT static page */}
+          {/* Book */}
+          {!isLoading && bookSpreads.length > 0 && (
+            <>
+              {/* ── BOOK ── */}
+              <div className={`ks-book ${isTearing ? 'ks-book--tearing' : ''}`} aria-label="Sách nhật ký">
+                
+                {/* Prev button */}
+                {deskMode === 'reading' && (
+                  <button className="ks-btn-nav ks-btn-nav--prev"
+                    onClick={(e) => { e.stopPropagation(); handleFlip('prev'); }}
+                    disabled={currentIdx === 0 || !!flipState}
+                    title="Trang trước (←)">
+                    <ChevronLeft size={26} />
+                  </button>
+                )}
+                
+                {deskMode === 'overview' && (
+                  <div className="ks-book-cover" onClick={() => setDeskMode('reading')}>
+                    <div className="ks-book-cover__content">
+                      <h1>The Keepsake</h1>
+                      <div className="ks-book-cover__divider"></div>
+                      <p>Khẽ chạm để lật giở những mảnh ký ức</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* LEFT static page */}
               <div className="ks-book__page ks-book__page--left">
                 <LeftPageContent
                   spread={current}
                   pageNum={currentIdx * 2 + 1}
                   onEdit={startWriting}
-                  onDelete={handleDelete}
+                  onDelete={promptDelete}
                   isLocked={current?.isPrivate && !unlockedDiaries.has(current.id)}
                 />
               </div>
@@ -442,15 +526,18 @@ const [filter, setFilter] = useState({});
                   </div>
                 );
               })()}
-            </div>
 
-            {/* Next button */}
-            <button className="ks-btn-nav ks-btn-nav--next"
-              onClick={() => handleFlip('next')}
-              disabled={currentIdx === bookSpreads.length - 1 || !!flipState}
-              title="Trang tiếp (→)">
-              <ChevronRight size={26} />
-            </button>
+                {/* Next button */}
+                {deskMode === 'reading' && (
+                  <button className="ks-btn-nav ks-btn-nav--next"
+                    onClick={(e) => { e.stopPropagation(); handleFlip('next'); }}
+                    disabled={currentIdx === bookSpreads.length - 1 || !!flipState}
+                    title="Trang tiếp (→)">
+                    <ChevronRight size={26} />
+                  </button>
+                )}
+
+              </div> {/* /ks-book */}
 
             {/* Page dots (max 10 shown) */}
             {bookSpreads.length > 1 && bookSpreads.length <= 12 && (
@@ -473,22 +560,8 @@ const [filter, setFilter] = useState({});
             )}
           </>
         )}
-
-        {/* Audio player */}
-        <div className="ks-audio-btn">
-          <button
-            title={isPlaying ? 'Tạm dừng nhạc' : 'Phát nhạc nền'}
-            onClick={() => {
-              if (isPlaying) audioRef.current?.pause();
-              else audioRef.current?.play();
-              setIsPlaying(p => !p);
-            }}>
-            {isPlaying
-              ? <Pause size={18} color="var(--ks-terracotta)" fill="var(--ks-terracotta)" />
-              : <Play size={18} color="var(--ks-terracotta)" fill="var(--ks-terracotta)" />}
-          </button>
-        </div>
-      </main>
+        </div> {/* /ks-desk-environment */}
+      </main> {/* /ks-desk-scene */}
 
       {/* ── WRITE MODAL ── */}
       {isWriting && (
@@ -592,7 +665,15 @@ const [filter, setFilter] = useState({});
         </div>
       )}
 
+      {showDeleteConfirm && (
+        <VintageDeleteConfirmModal 
+          onConfirm={confirmDelete} 
+          onCancel={() => setShowDeleteConfirm(false)} 
+        />
+      )}
+
       {showAnalytics && <AnalyticsModal onClose={() => setShowAnalytics(false)} />}
+      
     </div>
   );
 };

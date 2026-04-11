@@ -141,8 +141,8 @@ body {
    ============================================================ */
 /* ── BOOK SPREAD ──────────────────────────────────── */
 .ks-book {
-  width: min(1240px, 94vw);
-  height: min(780px, 80vh);
+  width: min(1000px, 94vw); /* Thu nhỏ bề ngang để lộ nền nhiều hơn */
+  height: min(650px, 75vh); /* Thấp xuống để không che khuất mây mưa và UI top */
   display: flex;
   position: relative;
   /* Perspective for child 3D flip */
@@ -151,9 +151,10 @@ body {
   box-shadow:
     0 20px 60px rgba(0,0,0,0.18),
     0 60px 120px rgba(0,0,0,0.12),
-    0 4px 8px rgba(0,0,0,0.08);
+    0 4px 8px rgba(0,0,0,0.08); /* Bóng sổ đỗ thẳng dưới bụng gỗ thớt */
   border-radius: 6px 28px 28px 6px;
   margin: auto;
+  z-index: 50; /* Bảo đảm nằm trên các pseudo props background nếu có */
 }
 
 .ks-book__spine {
@@ -204,6 +205,30 @@ body {
 .ks-book__page--left  { border-radius: 6px 0 0 6px; }
 .ks-book__page--right { border-radius: 0 28px 28px 0; }
 
+/* ── TEARING ANIMATION (DELETE SPREAD) ───────────── */
+.ks-book--tearing .ks-book__page--left {
+  animation: tear-left 1s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  transform-origin: right center;
+  z-index: 100;
+}
+.ks-book--tearing .ks-book__page--right {
+  animation: tear-right 1s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  transform-origin: left center;
+  z-index: 100;
+}
+
+@keyframes tear-left {
+  0% { transform: rotate3d(0,0,1,0deg) translateY(0) scale(1); opacity: 1; filter: contrast(1); }
+  20% { transform: rotate3d(0,0,1,-5deg) translateY(-30px) skewX(5deg) scale(0.95); opacity: 1; filter: contrast(1.1); box-shadow: 10px 10px 20px rgba(0,0,0,0.3); }
+  100% { transform: rotate3d(1,1,1,-45deg) translateY(150vh) scale(0.2) skewX(20deg); opacity: 0; filter: contrast(1.5) sepia(0.8); }
+}
+
+@keyframes tear-right {
+  0% { transform: rotate3d(0,0,1,0deg) translateY(0) scale(1); opacity: 1; filter: contrast(1); }
+  20% { transform: rotate3d(0,0,1,5deg) translateY(-30px) skewX(-5deg) scale(0.95); opacity: 1; filter: contrast(1.1); box-shadow: -10px 10px 20px rgba(0,0,0,0.3); }
+  100% { transform: rotate3d(1,-1,1,45deg) translateY(150vh) scale(0.2) skewX(-20deg); opacity: 0; filter: contrast(1.5) sepia(0.8); }
+}
+
 /* ============================================================
    CONTENT TYPOGRAPHY (BEM: ks-content)
    ============================================================ */
@@ -247,6 +272,71 @@ body {
   margin-bottom: 24px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
+
+/* ── VINTAGE DELETE CONFIRM MODAL ────────────────── */
+.ks-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 5000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: ksFadeIn 0.25s ease;
+}
+
+.ks-modal-overlay--dark { 
+  background: rgba(10, 5, 0, 0.85) !important; 
+  backdrop-filter: blur(4px); 
+}
+.ks-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ks-burnt-paper {
+  position: relative;
+  background: #2a1f1a;
+  padding: 40px;
+  width: 380px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.9);
+  clip-path: polygon(2% 4%, 96% 2%, 98% 95%, 4% 98%, 0% 50%); /* Mô phỏng mép rách/cháy */
+  z-index: 1000;
+}
+.ks-burnt-edges {
+  position: absolute;
+  inset: 0;
+  border: 4px solid #b83333; /* viền sém đỏ lửa */
+  filter: blur(2px) drop-shadow(0 0 15px #ff6b00);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.ks-burnt-text {
+  font-family: 'Caveat', 'Patrick Hand', cursive;
+  font-size: 26px;
+  color: #dfcdb8;
+  margin-bottom: 30px;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.9);
+  position: relative;
+  z-index: 2;
+}
+.ks-burnt-actions {
+  display: flex;
+  justify-content: space-around;
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+  z-index: 2;
+}
+.ks-burnt-btn {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 14px; letter-spacing: 2px; font-weight: bold;
+}
+.ks-burnt-btn--danger { color: #d64040; transition: color 0.2s, text-shadow 0.2s }
+.ks-burnt-btn--danger:hover { color: #ff6b00; text-shadow: 0 0 8px #ff6b00; }
+.ks-burnt-btn--safe { color: #8b7355; transition: color 0.2s }
+.ks-burnt-btn--safe:hover { color: #dfcdb8; }
 
 /* ── PRIVATE ENVELOPE OVERLAY ──────────────────── */
 .ks-envelope-overlay {
@@ -933,24 +1023,28 @@ body {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 56px; height: 56px;
-  background: white;
+  width: 44px; height: 44px;
+  background: rgba(20, 10, 5, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   cursor: pointer;
   transition: var(--ks-transition);
   z-index: 2000;
-  border: none;
-  color: var(--ks-terracotta);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.9);
 }
 .ks-btn-nav:hover:not(:disabled) {
+  background: rgba(40, 20, 10, 0.8);
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+  color: #fff;
 }
-.ks-btn-nav:disabled { opacity: 0.12; cursor: not-allowed; }
-.ks-btn-nav--prev { left: 24px; }
-.ks-btn-nav--next { right: 24px; }
+.ks-btn-nav:disabled { opacity: 0; pointer-events: none; }
+.ks-btn-nav--prev { left: -60px; }
+.ks-btn-nav--next { right: -60px; }
 
 /* ── PAGE FOOTER ─────────────────────────────────── */
 .ks-page-footer {
@@ -1001,64 +1095,73 @@ body {
 
 /* ── DASHBOARD HEADER & FILTER BAR ────────────────────────────── */
 .ks-header-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(254,251,221,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  position: absolute; /* Lơ lửng trên nền Cửa sổ Mưa */
+  top: 40px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 900px;
+  width: 95%;
+  /* Bỏ nền của wrapper khổng lồ để các thẻ bên trong 'nổi bồng bềnh' độc lập */
+  background: transparent;
+  padding: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-.ks-dashboard-header {
-  height: 64px;
-  padding: 0 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.ks-header-wrapper--hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -20px);
 }
+
+/* Xóa CSS cũ của dashboard-header do đã bị remove khỏi DOM */
 
 .ks-filter-bar {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap; /* Tránh cắt xén flex item bị đẩy qua bên trái do overflow */
   gap: 16px;
-  padding: 8px 2rem 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 4px 0 8px;
+  width: 100%;
 }
-.ks-filter-bar::-webkit-scrollbar { display: none; }
 
 .ks-filter-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(40, 20, 10, 0.5) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 50px;
   padding: 6px 14px;
   transition: var(--ks-transition);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 .ks-filter-group:focus-within, .ks-filter-group:hover {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(75, 139, 139, 0.3);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  background: rgba(40, 20, 10, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .ks-filter-icon {
-  color: var(--ks-text-muted);
-  opacity: 0.6;
+  color: rgba(255,255,255,0.7) !important;
 }
 
 .ks-filter-input, .ks-filter-select {
-  background: transparent;
+  background: transparent !important;
   border: none;
   outline: none;
   font-family: 'Inter', sans-serif;
   font-size: 0.8rem;
-  color: var(--ks-text);
+  color: #fff !important;
   min-width: 60px;
 }
+.ks-filter-input::placeholder { color: rgba(255,255,255,0.5); }
+.ks-filter-select option { background: #4a3320; color: #fff; }
 .ks-filter-input::placeholder { color: #aaa; }
 .ks-date-input { width: 100px; }
 
@@ -1418,3 +1521,408 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--ks-paper-rule); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #c4b8a8; }
+
+/* ============================================================
+   DESK ENVIRONMENT (Coffee & Cassette & 3D Stage)
+   ============================================================ */
+
+.ks-desk-scene {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url('/rainy_window_bg.png');
+  background-size: cover;
+  background-position: center bottom; /* Luôn giữ phần gờ gỗ bệ cửa sổ ở dưới để đặt đồ */
+  box-shadow: inset 0 0 150px rgba(0,0,0,0.6); /* Giữ chiều sâu cho căn phòng tăm tối, chỉ có mưa rơi ngoài cửa */
+  overflow: hidden;
+}
+
+.ks-desk-environment {
+  width: 1000px;
+  height: 80vh; /* Thu hẹp lại một chút để các vật phẩm bám sát dưới đáy màn hình */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; /* Đẩy cuốn sổ và đồ vật xuống sát mép dưới (Nơi có xà gồ gỗ của cửa sổ) */
+  padding-bottom: 20px;
+  position: relative;
+  transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ks-desk-environment--overview {
+  /* GÓC NHÌN CHÍNH DIỆN 0 ĐỘ - Đẹp lộng lẫy và sắc nét như tranh */
+  transform: scale(0.9);
+}
+
+.ks-desk-environment--reading {
+  /* Tiến sát lại gần cuốn sổ */
+  transform: scale(1) translateY(40px);
+}
+
+/* 📕 BÌA SỔ (Book Cover) */
+.ks-desk-mat {
+  display: none; /* Bỏ lót thảm rườm rà, để sổ trực tiếp lên gỗ cho chill */
+}
+
+.ks-book-cover {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #4a3320; /* Màu Nâu Bò Sậm như ảnh */
+  border-radius: 6px 16px 16px 6px;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  /* Mô phỏng thêm cọc giấy ở mép dưới */
+  box-shadow: 
+    inset 8px 0 16px rgba(0,0,0,0.6), /* Gáy sách lõm */
+    0 4px 0 #ecdcb3, 0 8px 0 #eedfb9, 0 12px 0 #ebd8ac, /* Các nếp giấy nhấp nhô bên dưới */
+    0px 20px 30px rgba(0,0,0,0.8); /* Bóng sổ đỗ thẳng dưới bụng gỗ thớt */
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  background-image: 
+    linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 5%, transparent 20%, rgba(255,255,255,0.02) 50%, rgba(0,0,0,0.1) 100%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E"); /* Vân nhám vải */
+}
+
+.ks-book-cover:hover {
+  transform: translateY(-10px); /* Chỉ bốc nhè nhẹ lên ngang */
+  box-shadow: 
+    inset 8px 0 16px rgba(0,0,0,0.6),
+    0 14px 0 #ecdcb3, 0 24px 0 #eedfb9, 0 34px 0 #ebd8ac, /* Lớp giấy dày thêm khi nhấc */
+    0px 30px 40px rgba(0,0,0,0.6);
+}
+
+.ks-book-cover__content {
+  text-align: center;
+  color: #d6b88b; /* Nhũ vàng */
+  border: 2px solid rgba(214, 184, 139, 0.3);
+  padding: 40px;
+  border-radius: 8px;
+}
+
+.ks-book-cover h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px;
+  font-style: italic;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.ks-book-cover__divider {
+  width: 50px;
+  height: 2px;
+  background: #d6b88b;
+  margin: 20px auto;
+}
+
+.ks-book-cover p {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* NÚT THOÁT (Close Book) */
+.ks-btn-close-book {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: background 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ks-btn-close-book:hover {
+  background: rgba(0,0,0,0.7);
+  transform: scale(1.05);
+}
+.close-x { font-weight: bold; font-size: 14px; }
+
+
+/* ============================================================
+   BILLBOARD PROPS (Đồ vật thẳng đứng trên khung ảnh phẳng)
+   ============================================================ */
+
+/* ☕ COFFEE MUG (Nằm kề bên phải sổ) */
+.ks-coffee-scene {
+  position: absolute;
+  bottom: 12%; /* Đặt trên thớt gỗ cùng cao độ với sổ */
+  right: -100px; 
+  width: 100px;
+  height: 90px;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 150;
+  transition: transform 0.3s;
+}
+.ks-coffee-scene:hover { transform: translateY(-10px) scale(1.05); }
+
+/* Thân cốc nhìn ngang (Gốm Ceramic Cổ Điển) */
+.ks-coffee-saucer {
+  position: absolute;
+  bottom: 0; left: 10px; right: 10px; top: 10px;
+  background: linear-gradient(135deg, #e6d3ba, #a38c71);
+  border-radius: 8px 8px 25px 25px;
+  box-shadow: 
+    inset -5px -5px 15px rgba(0,0,0,0.4),
+    inset 5px 5px 15px rgba(255,255,255,0.4);
+  z-index: 2;
+}
+
+/* Miệng cốc hình elip */
+.ks-coffee-cup {
+  position: absolute;
+  top: 0; left: 10px; width: 80px; height: 16px;
+  background: #1f1108; /* Màu cà phê đặc sệt */
+  border-radius: 50%;
+  border: 3px solid #f2e3cf;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,1);
+  z-index: 3;
+}
+
+/* Đĩa lót (Saucer) dưới đáy cốc */
+.ks-coffee-saucer::before {
+  content: '';
+  position: absolute;
+  bottom: -10px; left: -10px; width: 100px; height: 20px;
+  background: linear-gradient(180deg, #d3bb9f, #8b7458);
+  border-radius: 50%;
+  box-shadow: 0 8px 15px rgba(0,0,0,0.8);
+  z-index: -1;
+}
+
+/* Quai li (Side view gốm cong mượt) */
+.ks-coffee-cup::after {
+  content: '';
+  position: absolute;
+  right: -25px; top: 12px;
+  width: 30px; height: 45px;
+  border: 7px solid #cdb599;
+  border-left: none;
+  border-radius: 0 25px 25px 0;
+  z-index: 1;
+  box-shadow: 
+    inset -3px 3px 5px rgba(255,255,255,0.4),
+    2px 5px 10px rgba(0,0,0,0.4);
+}
+
+/* Bỏ bóng bẹp cũ đi */
+.ks-coffee-scene::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 0px; width: 100%; height: 10px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  filter: blur(4px);
+  z-index: 0;
+}
+
+/* 💨 Làn khói */
+.ks-coffee-steam {
+  position: absolute;
+  width: 6px; height: 30px;
+  background: #fff;
+  border-radius: 50%;
+  filter: blur(4px);
+  opacity: 0;
+  bottom: 50px;
+  z-index: 4;
+  animation: ksSteamRise 4s infinite ease-in;
+}
+.ks-steam-1 { left: 30%; animation-delay: 0s; }
+.ks-steam-2 { left: 50%; animation-delay: 1.5s; width: 8px; height: 40px; }
+.ks-steam-3 { left: 70%; animation-delay: 3s; }
+
+@keyframes ksSteamRise {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  50% { opacity: 0.3; }
+  100% { transform: translateY(-40px) scale(3); opacity: 0; filter: blur(8px); }
+}
+
+/* 🤎 Vết ố (Stain) */
+.ks-coffee-stain-mark {
+  position: absolute;
+  width: 80px; height: 80px;
+  border-radius: 50% 45% 55% 42%;
+  border: 4px solid rgba(139, 69, 19, 0.15); /* Coffee color */
+  background: radial-gradient(circle, rgba(139,69,19,0.02) 40%, rgba(139,69,19,0.1) 90%);
+  box-shadow: inset 0 0 4px rgba(139,69,19,0.1);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  z-index: 10;
+}
+
+/* 📻 VINTAGE RADIO (Cassette đặt nằm phẳng trên bàn theo Layout Mới) */
+.ks-cassette-player {
+  position: absolute;
+  bottom: 12%; /* Nằm rạp ngang tầm cuốn sổ */
+  left: -80px;
+  width: 220px;
+  height: 140px;
+  background: linear-gradient(135deg, #4a2f1d, #2d180b); /* Gỗ bóng tối cao cấp */
+  border-radius: 12px;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  border: 2px solid #6c4b35;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 
+    inset 0 10px 20px rgba(255,255,255,0.05),
+    inset -5px -5px 15px rgba(0,0,0,0.8),
+    0 20px 30px rgba(0,0,0,0.8); /* Bóng đổ mạnh trên mặt bệ gỗ */
+}
+
+/* Mặt trước Radio bằng kim loại đục lỗ rãnh ngang */
+.ks-cassette-player::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 10px; width: 120px; bottom: 10px;
+  background: repeating-linear-gradient(
+    180deg,
+    #111,
+    #111 2px,
+    #333 3px,
+    #333 4px
+  );
+  border-radius: 6px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+}
+
+/* Hai núm vặn rực rỡ bên phải (Knobs) */
+.ks-cassette-player::after {
+  content: '';
+  position: absolute;
+  right: 25px; top: 30px;
+  width: 40px; height: 40px;
+  background: radial-gradient(circle, #ddd 30%, #888 80%, #555 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 5px 10px rgba(0,0,0,0.6),
+    inset 0 2px 5px rgba(255,255,255,0.8),
+    0 60px 0 0 #aaa, /* Núm vặn dưới (box-shadow hack) */
+    0 65px 10px rgba(0,0,0,0.6);
+}
+
+.ks-cassette-window,
+.ks-cassette-label,
+.ks-cassette-buttons {
+  display: none !important;
+}
+
+.ks-cassette-player:hover { 
+  transform: translateY(-5px) scale(1.02); 
+}
+
+/* Ẩn bớt đi khi sổ Reading mở to ra */
+.ks-desk-environment--reading .ks-cassette-player {
+  opacity: 0;
+  pointer-events: none;
+}
+.ks-desk-environment--reading .ks-coffee-scene {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ks-cassette-window {
+  width: 90%;
+  height: 60px;
+  background: #111;
+  border-radius: 6px;
+  margin-top: 10px;
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.8);
+  border: 4px solid #333;
+}
+.ks-cassette-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 40%);
+  border-radius: 2px;
+}
+
+/* Lõi băng (Spool) */
+.ks-cassette-spool {
+  width: 40px; height: 40px;
+  background: #ddd;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  position: relative;
+  box-shadow: 0 0 0 10px rgba(40,40,40,0.9); /* Băng từ tính quấn quanh */
+}
+.ks-cassette-spool::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  background: #333;
+  border-radius: 50%;
+  /* Các răng của lõi băng */
+  box-shadow: 0 2px 0 #111;
+  background-image: conic-gradient(transparent 0deg, transparent 40deg, #111 40deg, #111 60deg, transparent 60deg, transparent 160deg, #111 160deg, #111 180deg, transparent 180deg, transparent 280deg, #111 280deg, #111 300deg, transparent 300deg);
+}
+
+.ks-cassette--playing .ks-cassette-spool {
+  animation: ksSpinTape 3s linear infinite;
+}
+.ks-cassette--playing .ks-spool-right {
+  animation: ksSpinTape 2.8s linear infinite; /* Quay hơi lệch pha */
+}
+
+@keyframes ksSpinTape {
+  to { transform: rotate(360deg); }
+}
+
+.ks-cassette-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  color: #522806;
+  background: #ffebcc;
+  padding: 4px 16px;
+  border-radius: 2px;
+  margin-top: 10px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.ks-cassette-buttons {
+  position: absolute;
+  bottom: -6px;
+  display: flex;
+  gap: 8px;
+}
+.ks-c-btn {
+  width: 25px; height: 18px;
+  background: #d4d4d4;
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 4px 6px rgba(255,255,255,0.8), 0 4px 4px rgba(0,0,0,0.4);
+  position: relative;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.ks-c-btn--pressed {
+  transform: translateY(4px);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4), 0 1px 1px rgba(0,0,0,0.1);
+  background: #bbb;
+}
+
