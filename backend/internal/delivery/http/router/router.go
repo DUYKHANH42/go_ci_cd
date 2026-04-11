@@ -13,7 +13,11 @@ func SetupRouter(
 	jwtManager *auth.JWTManager,
 	userHandler *handler.UserHandler,
 	diaryHandler *handler.DiaryHandler,
+	uploadHandler *handler.UploadHandler,
 ) {
+	// Static route for serving uploaded images
+	engine.Static("/uploads", "./uploads")
+
 	// Global middleware
 	engine.Use(middleware.CORSMiddleware())
 	engine.Use(middleware.LoggerMiddleware())
@@ -51,9 +55,17 @@ func SetupRouter(
 			diaryGroup.POST("", diaryHandler.Create)
 			diaryGroup.GET("", diaryHandler.GetAll)
 			diaryGroup.GET("/search", diaryHandler.Search)
+			diaryGroup.GET("/statistics", diaryHandler.GetStatistics)
 			diaryGroup.GET("/:id", diaryHandler.GetByID)
 			diaryGroup.PUT("/:id", diaryHandler.Update)
 			diaryGroup.DELETE("/:id", diaryHandler.Delete)
+		}
+
+		// Upload routes (protected)
+		uploadGroup := v1.Group("/upload")
+		uploadGroup.Use(middleware.AuthMiddleware(jwtManager))
+		{
+			uploadGroup.POST("", uploadHandler.UploadImage)
 		}
 	}
 }

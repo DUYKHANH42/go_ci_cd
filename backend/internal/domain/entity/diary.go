@@ -37,6 +37,7 @@ type Diary struct {
 	Content   string    `json:"content" gorm:"type:text;not null"`
 	Mood      Mood      `json:"mood" gorm:"size:20"`
 	Tags      string    `json:"tags" gorm:"size:500"`
+	ImageURLs string    `json:"image_urls" gorm:"type:text"`
 	IsPrivate bool      `json:"is_private" gorm:"default:true"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

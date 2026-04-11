@@ -39,10 +39,11 @@ func main() {
 	// Initialize handlers (Dependency Injection)
 	userHandler := handler.NewUserHandler(userUseCase)
 	diaryHandler := handler.NewDiaryHandler(diaryUseCase)
+	uploadHandler := handler.NewUploadHandler()
 
 	// Setup router
 	engine := gin.New()
-	router.SetupRouter(engine, jwtManager, userHandler, diaryHandler)
+	router.SetupRouter(engine, jwtManager, userHandler, diaryHandler, uploadHandler)
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Server.Port)

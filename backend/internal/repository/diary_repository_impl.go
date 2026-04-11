@@ -138,6 +138,37 @@ func (r *diaryRepositoryImpl) Search(ctx context.Context, filter domainRepo.Diar
 	}, nil
 }
 
+// GetStatistics implements domainRepo.DiaryRepository
+func (r *diaryRepositoryImpl) GetStatistics(ctx context.Context, userID uint) (int64, map[string]int, error) {
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&entity.Diary{}).Where("user_id = ?", userID).Count(&total).Error; err != nil {
+		return 0, nil, err
+	}
+
+	type MoodCount struct {
+		Mood  string
+		Count int
+	}
+	var results []MoodCount
+
+	if err := r.db.WithContext(ctx).Model(&entity.Diary{}).
+		Where("user_id = ?", userID).
+		Select("mood, count(*) as count").
+		Group("mood").
+		Find(&results).Error; err != nil {
+		return 0, nil, err
+	}
+
+	moodDistribution := make(map[string]int)
+	for _, r := range results {
+		if r.Mood != "" {
+			moodDistribution[r.Mood] = r.Count
+		}
+	}
+
+	return total, moodDistribution, nil
+}
+
 // Builder Pattern helper methods for query construction
 
 func (r *diaryRepositoryImpl) applyUserFilter(query *gorm.DB, userID uint) *gorm.DB {
@@ -150,7 +181,7 @@ func (r *diaryRepositoryImpl) applyUserFilter(query *gorm.DB, userID uint) *gorm
 func (r *diaryRepositoryImpl) applyKeywordFilter(query *gorm.DB, keyword string) *gorm.DB {
 	if keyword != "" {
 		like := "%" + keyword + "%"
-		return query.Where("(title ILIKE ? OR content ILIKE ?)", like, like)
+		return query.Where("(title LIKE ? OR content LIKE ?)", like, like)
 	}
 	return query
 }
@@ -165,7 +196,7 @@ func (r *diaryRepositoryImpl) applyMoodFilter(query *gorm.DB, mood entity.Mood) 
 func (r *diaryRepositoryImpl) applyTagsFilter(query *gorm.DB, tags string) *gorm.DB {
 	if tags != "" {
 		like := "%" + tags + "%"
-		return query.Where("tags ILIKE ?", like)
+		return query.Where("tags LIKE ?", like)
 	}
 	return query
 }

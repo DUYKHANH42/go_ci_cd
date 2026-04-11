@@ -193,23 +193,57 @@ func (h *DiaryHandler) Delete(c *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /api/v1/diaries/search [get]
 func (h *DiaryHandler) Search(c *gin.Context) {
+    userID, ok := middleware.GetUserIDFromContext(c)
+    if !ok {
+        response.Unauthorized(c, "Không thể xác thực người dùng")
+        return
+    }
+
+    var filter dto.DiaryFilterRequest
+    if err := c.ShouldBindQuery(&filter); err != nil {
+        response.BadRequest(c, "Tham số tìm kiếm không hợp lệ", err.Error())
+        return
+    }
+
+    // Validate struct tags using middleware helper
+    if !middleware.ValidateStruct(c, &filter) {
+        return // response already sent
+    }
+
+    // Additional semantic validation (date format, range)
+    if err := filter.Validate(); err != nil {
+        response.BadRequest(c, "Tham số không hợp lệ", err.Error())
+        return
+    }
+
+    diaries, err := h.diaryUseCase.Search(c.Request.Context(), userID, filter)
+    if err != nil {
+        HandleError(c, err)
+        return
+    }
+
+    response.OK(c, "Tìm kiếm nhật ký thành công", diaries)
+}
+
+// GetStatistics handling mood entry analytics
+// @Summary Get mood statistics
+// @Tags Diaries
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response
+// @Router /api/v1/diaries/statistics [get]
+func (h *DiaryHandler) GetStatistics(c *gin.Context) {
 	userID, ok := middleware.GetUserIDFromContext(c)
 	if !ok {
 		response.Unauthorized(c, "Không thể xác thực người dùng")
 		return
 	}
 
-	var filter dto.DiaryFilterRequest
-	if err := c.ShouldBindQuery(&filter); err != nil {
-		response.BadRequest(c, "Tham số tìm kiếm không hợp lệ", err.Error())
-		return
-	}
-
-	diaries, err := h.diaryUseCase.Search(c.Request.Context(), userID, filter)
+	stats, err := h.diaryUseCase.GetStatistics(c.Request.Context(), userID)
 	if err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	response.OK(c, "Tìm kiếm nhật ký thành công", diaries)
+	response.OK(c, "Lấy thống kê thành công", stats)
 }

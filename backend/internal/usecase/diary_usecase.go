@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"strings"
 
 	domainErrors "github.com/demo-diary/diary-management/internal/domain/errors"
 	"github.com/demo-diary/diary-management/internal/domain/entity"
@@ -17,6 +18,7 @@ type DiaryUseCase interface {
 	GetByID(ctx context.Context, userID uint, diaryID uint) (*dto.DiaryResponse, error)
 	GetByUserID(ctx context.Context, userID uint, page, pageSize int) (*dto.DiaryListResponse, error)
 	Search(ctx context.Context, userID uint, filter dto.DiaryFilterRequest) (*dto.DiaryListResponse, error)
+	GetStatistics(ctx context.Context, userID uint) (*dto.DiaryStatisticsResponse, error)
 }
 
 // diaryUseCaseImpl implements DiaryUseCase
@@ -42,6 +44,9 @@ func (uc *diaryUseCaseImpl) Create(ctx context.Context, userID uint, req dto.Cre
 	diary, err := entity.NewDiary(userID, req.Title, req.Content, req.Mood, req.Tags, isPrivate)
 	if err != nil {
 		return nil, domainErrors.NewAppError(domainErrors.ErrValidation, err.Error(), 400)
+	}
+	if req.ImageURLs != nil && len(req.ImageURLs) > 0 {
+		diary.ImageURLs = strings.Join(req.ImageURLs, ",")
 	}
 
 	if err := uc.diaryRepo.Create(ctx, diary); err != nil {
@@ -83,6 +88,9 @@ func (uc *diaryUseCaseImpl) Update(ctx context.Context, userID uint, diaryID uin
 	}
 	if req.Tags != nil {
 		diary.Tags = *req.Tags
+	}
+	if req.ImageURLs != nil {
+		diary.ImageURLs = strings.Join(req.ImageURLs, ",")
 	}
 	if req.IsPrivate != nil {
 		diary.IsPrivate = *req.IsPrivate
@@ -168,4 +176,17 @@ func (uc *diaryUseCaseImpl) Search(ctx context.Context, userID uint, filter dto.
 
 	response := dto.ToDiaryListResponse(result.Diaries, result.Total, result.Page, result.PageSize, result.TotalPages)
 	return &response, nil
+}
+
+// GetStatistics gets mood analytics and counts for a user
+func (uc *diaryUseCaseImpl) GetStatistics(ctx context.Context, userID uint) (*dto.DiaryStatisticsResponse, error) {
+	total, distribution, err := uc.diaryRepo.GetStatistics(ctx, userID)
+	if err != nil {
+		return nil, domainErrors.NewAppError(domainErrors.ErrInternal, "Lỗi khi lấy thống kê", 500)
+	}
+
+	return &dto.DiaryStatisticsResponse{
+		TotalEntries:     total,
+		MoodDistribution: distribution,
+	}, nil
 }

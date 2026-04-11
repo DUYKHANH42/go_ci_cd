@@ -1,0 +1,8 @@
+- [x] Tạo middleware/validation.go (validation helper)
+- [x] Cập nhật backend/internal/delivery/http/handler/diary_handler.go: import validator, gọi filter.Validate() và trả về BadRequest khi lỗi
+- [x] Cập nhật frontend/src/services/diary.js: sửa hàm search để nhận object filter và xây dựng query string
+- [x] Tạo component SearchBar.jsx trong frontend/src/components/
+- [x] Tạo component FilterPanel.jsx trong frontend/src/components/ (thanh công cụ Filter)
+- [x] Cập nhật DashboardPage.jsx: import SearchBar, FilterPanel; thêm UI; quản lý state filter; gọi diaryService.search; cập nhật bookSpreads
+- [x] Cập nhật index.css: style cho search bar và filter panel, fix lưới 40px
+- [ ] Kiểm tra build, chạy test, xác nhận chức năng

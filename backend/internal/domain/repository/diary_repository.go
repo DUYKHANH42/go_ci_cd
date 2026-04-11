@@ -35,4 +35,5 @@ type DiaryRepository interface {
 	FindByID(ctx context.Context, id uint) (*entity.Diary, error)
 	FindByUserID(ctx context.Context, userID uint, page, pageSize int) (*DiaryListResult, error)
 	Search(ctx context.Context, filter DiaryFilter) (*DiaryListResult, error)
+	GetStatistics(ctx context.Context, userID uint) (int64, map[string]int, error)
 }
